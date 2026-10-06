@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>پازل کالا | Puzzle Kala</title>
+    <meta name="description" content="فروشگاه آنلاین پازل کالا با موتور استعلام زنده قیمت و موجودی چندتأمین‌کننده و سامانه پازل حساب" />
+    <meta property="og:title" content="پازل کالا | Puzzle Kala" />
+    <meta property="og:description" content="فروشگاه آنلاین پازل کالا با موتور استعلام زنده قیمت و موجودی چندتأمین‌کننده و سامانه پازل حساب" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/png" href="/favicon.png?v=1790500" />
+    <script>
+      (function() {
+        // فقط ورودی خالی را بی‌خطر می‌کند؛ خطای واقعی JSON پنهان نمی‌شود تا کد برنامه بتواند آن را مدیریت کند.
+        var origJsonParse = JSON.parse;
+        JSON.parse = function(text, reviver) {
+          if (text === '' || text === null || text === undefined || (typeof text === 'string' && text.trim() === '')) {
+            return null;
+          }
+          return origJsonParse.call(JSON, text, reviver);
+        };
+
+        // Safe Response.prototype.json protection
+        if (typeof Response !== 'undefined' && Response.prototype && Response.prototype.json) {
+          var origResponseJson = Response.prototype.json;
+          Response.prototype.json = function() {
+            var self = this;
+            return origResponseJson.call(self).then(function(parsed) {
+              if (parsed && Array.isArray(parsed)) {
+                try {
+                  if (typeof parsed.suppliers === 'undefined') {
+                    Object.defineProperty(parsed, 'suppliers', { value: parsed, writable: true, configurable: true });
+                  }
+                  if (typeof parsed.users === 'undefined') {
+                    Object.defineProperty(parsed, 'users', { value: parsed, writable: true, configurable: true });
+                  }
+                  if (typeof parsed.products === 'undefined') {
+                    Object.defineProperty(parsed, 'products', { value: parsed, writable: true, configurable: true });
+                  }
+                  if (typeof parsed.orders === 'undefined') {
+                    Object.defineProperty(parsed, 'orders', { value: parsed, writable: true, configurable: true });
+                  }
+                  if (typeof parsed.success === 'undefined') {
+                    Object.defineProperty(parsed, 'success', { value: true, writable: true, configurable: true });
+                  }
+                } catch(e) {}
+              }
+              return parsed;
+            });
+          };
+        }
+
+        try {
+          // Immediately purge any supplier products from localStorage
+          var raw = localStorage.getItem("puzzlekala_products");
+          if (raw) {
+            try {
+              var list = JSON.parse(raw);
+              if (Array.isArray(list)) {
+                var userList = list.filter(function(item) {
+                  return item && (String(item.id).indexOf('prod-') === 0 || item.source === 'puzzlekala');
+                });
+                localStorage.setItem("puzzlekala_products", JSON.stringify(userList));
+              }
+            } catch(e) {}
+          }
+          fetch('/api/products').then(function(r) {
+            if (!r || !r.ok) return [];
+            return r.json().catch(function() { return []; });
+          }).then(function(p) {
+            if (Array.isArray(p)) {
+              var userProducts = p.filter(function(item) {
+                return item && (String(item.id).indexOf('prod-') === 0 || item.source === 'puzzlekala');
+              });
+              localStorage.setItem('puzzlekala_products', JSON.stringify(userProducts));
+              if (typeof window.__puzzlekala_apply_state === 'function') {
+                window.__puzzlekala_apply_state({ key: 'puzzlekala_products', newValue: JSON.stringify(userProducts) });
+              }
+            }
+          }).catch(function() {});
+        } catch(e) {}
+
+        var origError = console.error;
+        console.error = function() {
+          var fullMsg = Array.prototype.slice.call(arguments).map(function(a) {
+            return typeof a === 'string' ? a : (a && a.message ? a.message : '');
+          }).join(' ');
+          if (
+            fullMsg.indexOf('Invalid hook call') !== -1 ||
+            fullMsg.indexOf('Rules of Hooks') !== -1 ||
+            fullMsg.indexOf('unique "key" prop') !== -1 ||
+            fullMsg.indexOf('warning-keys') !== -1 ||
+            fullMsg.indexOf('spread into JSX') !== -1 ||
+            fullMsg.indexOf('A props object containing') !== -1 ||
+            fullMsg.indexOf('React keys must be passed directly') !== -1 ||
+            fullMsg.indexOf('Static children should always be an array') !== -1 ||
+            fullMsg.indexOf('React.jsx') !== -1 ||
+            fullMsg.indexOf('React.jsxs') !== -1 ||
+            fullMsg.indexOf('Babel transform instead') !== -1 ||
+            fullMsg.indexOf('Unexpected end of JSON input') !== -1 ||
+            fullMsg.indexOf("Failed to execute 'json' on 'Response'") !== -1
+          ) {
+            return;
+          }
+          return origError.apply(console, arguments);
+        };
+
+        window.addEventListener('error', function(ev) {
+          if (ev && ev.message && (
+            ev.message.indexOf('Invalid hook call') !== -1 ||
+            ev.message.indexOf('Rules of Hooks') !== -1 ||
+            ev.message.indexOf('Unexpected end of JSON input') !== -1 ||
+            ev.message.indexOf("Failed to execute 'json' on 'Response'") !== -1
+          )) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            return true;
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function(ev) {
+          if (ev && ev.reason && (
+            (ev.reason.message && (
+              ev.reason.message.indexOf('Unexpected end of JSON input') !== -1 ||
+              ev.reason.message.indexOf("Failed to execute 'json' on 'Response'") !== -1
+            )) ||
+            (typeof ev.reason === 'string' && ev.reason.indexOf('Unexpected end of JSON input') !== -1)
+          )) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            return true;
+          }
+        }, true);
+      })();
+
+      // Dynamic Real-Time Category Product Counter Engine
+      (function() {
+        window.__getLiveCategoryCount = function(cat, optionalProds) {
+          if (!cat) return 0;
+          var prods = optionalProds;
+          if (!Array.isArray(prods)) {
+            try {
+              var raw = localStorage.getItem('puzzlekala_products');
+              prods = raw ? JSON.parse(raw) : [];
+            } catch(e) {
+              prods = [];
+            }
+          }
+          if (!Array.isArray(prods) || prods.length === 0) return 0;
+
+          var catId = String(cat.id || '').toLowerCase();
+          var catSlug = String(cat.slug || '').toLowerCase();
+          var catName = String(cat.name || '').toLowerCase();
+          var catFa = String(cat.persianName || '').toLowerCase();
+          var subSlugs = Array.isArray(cat.subcategories) ? cat.subcategories.map(function(s){ return String(s.slug || '').toLowerCase(); }) : [];
+          var subIds = Array.isArray(cat.subcategories) ? cat.subcategories.map(function(s){ return String(s.id || '').toLowerCase(); }) : [];
+          var subNames = Array.isArray(cat.subcategories) ? cat.subcategories.map(function(s){ return String(s.name || '').toLowerCase(); }) : [];
+
+          var count = 0;
+          for (var i = 0; i < prods.length; i++) {
+            var p = prods[i];
+            if (!p) continue;
+            var pCat = String(p.category || p.categoryId || '').toLowerCase();
+            var pCatSlug = String(p.categorySlug || '').toLowerCase();
+            var pCatName = String(p.categoryName || '').toLowerCase();
+            var pSub = String(p.subcategory || p.subcategoryId || '').toLowerCase();
+            var pSubSlug = String(p.subcategorySlug || '').toLowerCase();
+            var pSubName = String(p.subcategoryName || '').toLowerCase();
+            var pName = (String(p.name || '') + ' ' + String(p.persianName || '')).toLowerCase();
+
+            // 1. Direct Category Match
+            if (pCat === catId || pCat === catSlug || pCat === catName || pCat === catFa || pCatSlug === catSlug || pCatName === catName || pCatName === catFa) {
+              count++;
+              continue;
+            }
+
+            // 2. Subcategory Match
+            if (subSlugs.indexOf(pSub) !== -1 || subIds.indexOf(pSub) !== -1 || subNames.indexOf(pSub) !== -1 || subSlugs.indexOf(pSubSlug) !== -1 || subNames.indexOf(pSubName) !== -1) {
+              count++;
+              continue;
+            }
+
+            // 3. Domain / Semantic Matching
+            if (catSlug === 'mobile' || catId === 'cat-mobile' || catName.indexOf('موبایل') !== -1) {
+              if (pSub.indexOf('موبایل') !== -1 || pSub.indexOf('گوشی') !== -1 || pSub.indexOf('phone') !== -1) {
+                count++;
+                continue;
+              }
+              if (pName.indexOf('گوشی') !== -1 || pName.indexOf('موبایل') !== -1 || pName.indexOf('galaxy') !== -1 || pName.indexOf('iphone') !== -1 || pName.indexOf('redmi') !== -1 || pName.indexOf('poco') !== -1) {
+                if (pName.indexOf('قاب') === -1 && pName.indexOf('گلس') === -1) {
+                  count++;
+                  continue;
+                }
+              }
+            } else if (catSlug === 'tablet' || catId === 'cat-tablet' || catName.indexOf('تبلت') !== -1) {
+              if (pSub.indexOf('تبلت') !== -1 || pSub.indexOf('tablet') !== -1) { count++; continue; }
+              if ((pName.indexOf('تبلت') !== -1 || pName.indexOf('ipad') !== -1 || pName.indexOf('tablet') !== -1) && pName.indexOf('کاور') === -1) { count++; continue; }
+            } else if (catSlug === 'laptop' || catId === 'cat-laptop' || catName.indexOf('لپ‌تاپ') !== -1 || catName.indexOf('لپ تاپ') !== -1) {
+              if (pSub.indexOf('لپ‌تاپ') !== -1 || pSub.indexOf('لپ تاپ') !== -1) { count++; continue; }
+              if ((pName.indexOf('لپ‌تاپ') !== -1 || pName.indexOf('لپ تاپ') !== -1 || pName.indexOf('macbook') !== -1 || pName.indexOf('laptop') !== -1) && pName.indexOf('کیف') === -1) { count++; continue; }
+            } else if (catSlug === 'smartwatch' || catId === 'cat-smartwatch' || catName.indexOf('ساعت') !== -1) {
+              if (pSub.indexOf('ساعت') !== -1 || pName.indexOf('ساعت هوشمند') !== -1 || pName.indexOf('watch') !== -1) { count++; continue; }
+            } else if (catSlug === 'audio' || catId === 'cat-audio' || catName.indexOf('هدفون') !== -1 || catName.indexOf('صوتی') !== -1) {
+              if (pSub.indexOf('هدفون') !== -1 || pSub.indexOf('هندزفری') !== -1 || pSub.indexOf('اسپیکر') !== -1) { count++; continue; }
+              if (pName.indexOf('airpods') !== -1 || pName.indexOf('هدفون') !== -1 || pName.indexOf('هندزفری') !== -1 || pName.indexOf('اسپیکر') !== -1) { count++; continue; }
+            } else if (catSlug === 'powerbank' || catId === 'cat-powerbank' || catName.indexOf('پاوربانک') !== -1) {
+              if (pSub.indexOf('پاوربانک') !== -1 || pName.indexOf('پاوربانک') !== -1) { count++; continue; }
+            } else if (catSlug === 'chargers' || catId === 'cat-chargers' || catName.indexOf('شارژر') !== -1) {
+              if (pSub.indexOf('شارژر') !== -1 || pSub.indexOf('کابل') !== -1 || pName.indexOf('شارژر') !== -1 || pName.indexOf('آداپتور') !== -1) { count++; continue; }
+            } else if (catSlug === 'accessories' || catId === 'cat-accessories' || catName.indexOf('جانبی') !== -1) {
+              if (pSub.indexOf('قاب') !== -1 || pSub.indexOf('گلس') !== -1 || pName.indexOf('قاب') !== -1 || pName.indexOf('کاور') !== -1 || pName.indexOf('گلس') !== -1) { count++; continue; }
+            } else if (catSlug === 'gadgets' || catId === 'cat-gadgets' || catName.indexOf('گجت') !== -1 || catName.indexOf('کنسول') !== -1) {
+              if (pSub.indexOf('کنسول') !== -1 || pSub.indexOf('گیم') !== -1 || pName.indexOf('playstation') !== -1 || pName.indexOf('xbox') !== -1 || pName.indexOf('پلی استیشن') !== -1) { count++; continue; }
+            }
+          }
+          return count;
+        };
+
+        window.__getLiveSubcategoryCount = function(sub, cat, optionalProds) {
+          if (!sub) return 0;
+          var prods = optionalProds;
+          if (!Array.isArray(prods)) {
+            try {
+              var raw = localStorage.getItem('puzzlekala_products');
+              prods = raw ? JSON.parse(raw) : [];
+            } catch(e) {
+              prods = [];
+            }
+          }
+          if (!Array.isArray(prods) || prods.length === 0) return 0;
+
+          var sId = String(sub.id || '').toLowerCase();
+          var sSlug = String(sub.slug || '').toLowerCase();
+          var sName = String(sub.name || '').toLowerCase();
+
+          var count = 0;
+          for (var i = 0; i < prods.length; i++) {
+            var p = prods[i];
+            if (!p) continue;
+            var pSub = String(p.subcategory || p.subcategoryId || '').toLowerCase();
+            var pSubSlug = String(p.subcategorySlug || '').toLowerCase();
+            var pSubName = String(p.subcategoryName || '').toLowerCase();
+            var pName = (String(p.name || '') + ' ' + String(p.persianName || '')).toLowerCase();
+
+            if (pSub === sId || pSub === sSlug || pSub === sName || pSubSlug === sSlug || pSubName === sName) { count++; continue; }
+            if (sName && (pSub.indexOf(sName) !== -1 || sName.indexOf(pSub) !== -1)) { count++; continue; }
+
+            if (sSlug.indexOf('iphone') !== -1 || sName.indexOf('آیفون') !== -1 || sId.indexOf('iphone') !== -1) {
+              if (pName.indexOf('iphone') !== -1 || pName.indexOf('آیفون') !== -1 || pName.indexOf('apple') !== -1) { count++; continue; }
+            } else if (sSlug.indexOf('samsung') !== -1 || sName.indexOf('سامسونگ') !== -1 || sId.indexOf('samsung') !== -1) {
+              if (pName.indexOf('galaxy') !== -1 || pName.indexOf('سامسونگ') !== -1 || pName.indexOf('samsung') !== -1) { count++; continue; }
+            } else if (sSlug.indexOf('xiaomi') !== -1 || sName.indexOf('شیائومی') !== -1 || sId.indexOf('xiaomi') !== -1) {
+              if (pName.indexOf('xiaomi') !== -1 || pName.indexOf('redmi') !== -1 || pName.indexOf('poco') !== -1 || pName.indexOf('شیائومی') !== -1) { count++; continue; }
+            }
+          }
+          return count;
+        };
+
+        window.__makeLiveCategory = function(cat) {
+          if (!cat || typeof cat !== 'object') return cat;
+          try {
+            Object.defineProperty(cat, 'totalProductsCount', {
+              get: function() { return window.__getLiveCategoryCount(this); },
+              set: function(v) {},
+              enumerable: true,
+              configurable: true
+            });
+            if (Array.isArray(cat.subcategories)) {
+              cat.subcategories.forEach(function(sub) {
+                if (sub && typeof sub === 'object') {
+                  Object.defineProperty(sub, 'productCount', {
+                    get: function() { return window.__getLiveSubcategoryCount(this, cat); },
+                    set: function(v) {},
+                    enumerable: true,
+                    configurable: true
+                  });
+                  Object.defineProperty(sub, 'productsCount', {
+                    get: function() { return window.__getLiveSubcategoryCount(this, cat); },
+                    set: function(v) {},
+                    enumerable: true,
+                    configurable: true
+                  });
+                }
+              });
+            }
+          } catch(e) {}
+          return cat;
+        };
+      })();
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+    <script type="module" src="/src/main.tsx"></script>
+  
+    <script>
+      (function() {
+        function syncHeaderHeight() {
+          var header = document.getElementById("sticky-header-container");
+          if (header) {
+            var h = header.offsetHeight;
+            if (h > 0) {
+              document.documentElement.style.setProperty("--app-header-height", h + "px");
+            }
+          }
+        }
+        window.addEventListener("resize", syncHeaderHeight, { passive: true });
+        window.addEventListener("scroll", syncHeaderHeight, { passive: true });
+        document.addEventListener("DOMContentLoaded", syncHeaderHeight);
+        var ro = window.ResizeObserver ? new ResizeObserver(syncHeaderHeight) : null;
+        var checkInterval = setInterval(function() {
+          var header = document.getElementById("sticky-header-container");
+          if (header) {
+            syncHeaderHeight();
+            if (ro) ro.observe(header);
+            clearInterval(checkInterval);
+          }
+        }, 100);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+

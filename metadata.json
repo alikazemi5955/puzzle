@@ -1,0 +1,6 @@
+{
+  "name": "پازل کالا | Puzzle Kala",
+  "description": "فروشگاه آنلاین پازل کالا با موتور استعلام زنده قیمت و موجودی چندتأمین‌کننده و سامانه پازل حساب",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

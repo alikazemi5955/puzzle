@@ -1,11 +1,17 @@
-<div align="center">
+# پازل کالا
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+فروشگاه موبایل با سه بخش هوشمند: ثبت هوشمند کالا (مدیر)، همگام‌سازی قیمت و موجودی تأمین‌کننده‌ها (هر ۵ دقیقه)، و دستیار هوشمند خرید (مشتری).
 
-  <h1>Built with AI Studio</h2>
+## اجرا
+1. `npm install`
+2. متغیرهای محیطی (فقط در Secrets/محیط سرور، نه در Git) — نمونه در `.env.example`:
+   - `GEMINI_API_KEY` برای ثبت هوشمند کالا
+   - `ANTHROPIC_API_KEY` برای دستیار هوشمند مشتری
+   - `HAMRAHTEL_PHONE` و `HAMRAHTEL_PASSWORD` برای همراه‌تل
+3. `npm run dev`
 
-  <p>The fastest path from prompt to production with Gemini.</p>
-
-  <a href="https://aistudio.google.com/apps">Start building</a>
-
-</div>
+## نکات مهم
+- مخزن گیت‌هاب باید **Private** باشد: پوشهٔ `data/` شامل اطلاعات مشتریان و حساب‌هاست.
+- Scheduler پنج‌دقیقه‌ای فقط وقتی کار می‌کند که سرور همیشه روشن باشد.
+- تأیید جهش قیمت‌های مشکوک: آدرس `/price-jumps.html` (با ورود مدیر).
+- جزئیات تغییرات: `CHANGES_ALL.md`
